@@ -547,10 +547,10 @@ public class JavaTextAreaPainter extends TextAreaPainter implements
             .getASTNodeAt(line, word, xLS, false).getNode();
         className = "PApplet";
         methodName = null;
-        findRecursively(temp, word);
-        findReturnTypeRecur(temp, word);
-        System.out.println(className + "." + methodName + "(" + parameters
-            + ")");
+        findRecursively(temp, word);//This function gets the name of function and no. of arguments
+        findReturnTypeRecur(temp, word);//This function gets the expected return type
+//        System.out.println(className + "." + methodName + "(" + parameters
+//            + ")");
         //        temp = "asd";
         //      log(errorCheckerService.mainClassOffset + " MCO "
         //      + "|" + line + "| offset " + xLS + word + " <= offf: "+off+ "\n");

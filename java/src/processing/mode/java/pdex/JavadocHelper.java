@@ -140,7 +140,7 @@ public class JavadocHelper {
                 return true;
               }
             };
-          mapMethod(jdocMap,p5Ref , fileFilter);
+          mapMethod(jdocMap,p5Ref , fileFilter);// Thos method fills the jdocMap recursively
           System.out.println("JDoc loaded "+jdocMap.size());
         }
         catch(Exception e){
@@ -181,7 +181,7 @@ public class JavadocHelper {
 							  } 
 						  }
 					  }
-					  methodName += counter + ")";
+					  methodName += counter + ")"; 
 				  }
 				  if(ele.tagName() == "ul"){
 					  msg = "<html><body> <strong><div style=\"width: 300px; text-justification: justify;\"></strong><table cellpadding=\"0\" cellspacing=\"0\" border=\"0\" class=\"ref-item\">";
@@ -197,7 +197,7 @@ public class JavadocHelper {
 //							  }
 					  }
 						msg += "</table></div></html></body></html>";          
-					  jdocMap.put(className + methodName, msg);
+					  jdocMap.put(className + methodName, msg);// Currently the key = "Classname.methodName(<no. of parameters>)" , value = "<documentation>"
 				  }
 				  //mat.replaceAll("");
 		//		  msg = msg.replaceAll("img src=\"", "img src=\""

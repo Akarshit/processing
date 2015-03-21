@@ -450,7 +450,7 @@ protected void loadJavaDocp5() {
 	    Thread t = new Thread(new Runnable() {
 
 	      @Override
-	      public void run() {
+	      public void run() { //put your address for javadoc here
 	        JavadocHelper.loadJavaDoc(jdocMap, new File("/home/akarshit/Documents/processing/build/javadoc/everything/processing"));
 	      }
 	    });
