@@ -1,22 +1,22 @@
 /* -*- mode: java; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
-Part of the Processing project - http://processing.org
-Copyright (c) 2012-15 The Processing Foundation
+ Part of the Processing project - http://processing.org
+ Copyright (c) 2012-15 The Processing Foundation
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License version 2
-as published by the Free Software Foundation.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 2
+ as published by the Free Software Foundation.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software Foundation, Inc.
-51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software Foundation, Inc.
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
 
 package processing.mode.java.pdex;
 
@@ -38,15 +38,31 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.List;
 //import java.util.concurrent.atomic.AtomicBoolean;
 
-
+import java.util.Map;
+import java.util.TreeMap;
 
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Segment;
 import javax.swing.text.Utilities;
 
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+import antlr.collections.AST;
 import processing.app.Base;
 import processing.app.SketchCode;
 import processing.app.syntax.SyntaxDocument;
@@ -54,28 +70,29 @@ import processing.app.syntax.TextAreaDefaults;
 import processing.app.syntax.TextAreaPainter;
 import processing.app.syntax.TokenMarker;
 
-
 /**
- * Customized line painter. Adds support for background colors, 
- * left hand gutter area with background color and text.
+ * Customized line painter. Adds support for background colors, left hand gutter
+ * area with background color and text.
  */
-public class JavaTextAreaPainter extends TextAreaPainter
-	implements MouseListener, MouseMotionListener {
+public class JavaTextAreaPainter extends TextAreaPainter implements
+    MouseListener, MouseMotionListener {
 
 //  protected JavaTextArea ta; // we need the subclassed textarea
   protected ErrorCheckerService errorCheckerService;
 
   public Color errorColor; // = new Color(0xED2630);
+
   public Color warningColor; // = new Color(0xFFC30E);
+
   public Color errorMarkerColor; // = new Color(0xED2630);
+
   public Color warningMarkerColor; // = new Color(0xFFC30E);
 
 //  static int ctrlMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
 
-  
   public JavaTextAreaPainter(JavaTextArea textArea, TextAreaDefaults defaults) {
     super(textArea, defaults);
-    
+
     addMouseListener(new MouseAdapter() {
       public void mouseClicked(MouseEvent evt) {
         if (!getEditor().hasJavaTabs()) { // Ctrl + Click disabled for java tabs
@@ -93,7 +110,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
     cursorType = Cursor.DEFAULT_CURSOR;
   }
 
-  
   void handleCtrlClick(MouseEvent evt) {
     Base.log("--handleCtrlClick--");
     int off = textArea.xyToOffset(evt.getX(), evt.getY());
@@ -109,14 +125,15 @@ public class JavaTextAreaPainter extends TextAreaPainter
       return;
     else {
       int x = textArea.xToOffset(line, evt.getX()), x2 = x + 1, x1 = x - 1;
-      Base.log("x="+x);
+      Base.log("x=" + x);
       int xLS = off - textArea.getLineStartNonWhiteSpaceOffset(line);
       if (x < 0 || x >= s.length())
         return;
       String word = s.charAt(x) + "";
       if (s.charAt(x) == ' ')
         return;
-      if (!(Character.isLetterOrDigit(s.charAt(x)) || s.charAt(x) == '_' || s.charAt(x) == '$'))
+      if (!(Character.isLetterOrDigit(s.charAt(x)) || s.charAt(x) == '_' || s
+          .charAt(x) == '$'))
         return;
       int i = 0;
       while (true) {
@@ -149,12 +166,13 @@ public class JavaTextAreaPainter extends TextAreaPainter
       }
       if (Character.isDigit(word.charAt(0)))
         return;
-      
-      Base.log(errorCheckerService.mainClassOffset + line + "|" + line + "| offset " + xLS + word + " <= \n");
-      errorCheckerService.getASTGenerator().scrollToDeclaration(line, word, xLS);
+
+      Base.log(errorCheckerService.mainClassOffset + line + "|" + line
+          + "| offset " + xLS + word + " <= \n");
+      errorCheckerService.getASTGenerator()
+          .scrollToDeclaration(line, word, xLS);
     }
   }
-  
 
 //  private void loadTheme(ExperimentalMode mode) {
 //    errorColor = mode.getThemeColor("editor.errorcolor", errorColor);
@@ -163,7 +181,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
 //    warningMarkerColor = mode.getThemeColor("editor.warningmarkercolor", warningMarkerColor);
 //  }
 
-  
   /**
    * Paint a line. Paints the gutter (with background color and text) then the
    * line (background color and text).
@@ -177,17 +194,17 @@ public class JavaTextAreaPainter extends TextAreaPainter
    *          horizontal position
    */
   @Override
-  protected void paintLine(Graphics gfx, int line, int x, 
+  protected void paintLine(Graphics gfx, int line, int x,
                            TokenMarker tokenMarker) {
     try {
       // TODO This line is causing NPEs randomly ever since I added the 
       // toggle for Java Mode/Debugger toolbar. [Manindra]
       super.paintLine(gfx, line, x + JavaTextArea.LEFT_GUTTER, tokenMarker);
-      
+
     } catch (Exception e) {
       Base.log(e.getMessage());
     }
-    
+
     // formerly only when in debug mode
     paintGutterBg(gfx, line, x);
     paintGutterLine(gfx, line, x);
@@ -195,7 +212,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
 
     paintErrorLine(gfx, line, x);
   }
-  
 
   /**
    * Paint the gutter background (solid color).
@@ -213,7 +229,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
     gfx.fillRect(0, y, JavaTextArea.LEFT_GUTTER, fm.getHeight());
   }
 
-  
   /**
    * Paint the vertical gutter separator line.
    * 
@@ -227,11 +242,10 @@ public class JavaTextAreaPainter extends TextAreaPainter
   protected void paintGutterLine(Graphics gfx, int line, int x) {
     int y = textArea.lineToY(line) + fm.getLeading() + fm.getMaxDescent();
     gfx.setColor(getTextArea().gutterLineColor);
-    gfx.drawLine(JavaTextArea.LEFT_GUTTER, y, 
-                 JavaTextArea.LEFT_GUTTER, y + fm.getHeight());
+    gfx.drawLine(JavaTextArea.LEFT_GUTTER, y, JavaTextArea.LEFT_GUTTER,
+                 y + fm.getHeight());
   }
 
-  
   /**
    * Paint the gutter text.
    * 
@@ -266,9 +280,9 @@ public class JavaTextAreaPainter extends TextAreaPainter
     Utilities.drawTabbedText(new Segment(text.toCharArray(), 0, text.length()),
                              JavaTextArea.GUTTER_MARGIN, y + 1, gfx, this, 0);
     Utilities.drawTabbedText(new Segment(text.toCharArray(), 0, text.length()),
-                             JavaTextArea.GUTTER_MARGIN + 1, y + 1, gfx, this, 0);
+                             JavaTextArea.GUTTER_MARGIN + 1, y + 1, gfx, this,
+                             0);
   }
-  
 
   /**
    * Paint the background color of a line.
@@ -296,7 +310,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
     gfx.setColor(col);
     gfx.fillRect(0, y, getWidth(), height);
   }
-  
 
   /**
    * Paints the underline for an error/warning line
@@ -320,7 +333,7 @@ public class JavaTextAreaPainter extends TextAreaPainter
     boolean notFound = true;
     boolean isWarning = false;
     Problem problem = null;
-    
+
     // Check if current line contains an error. If it does, find if it's an
     // error or warning
     for (ErrorMarker emarker : errorCheckerService.getEditor().getErrorPoints()) {
@@ -345,16 +358,19 @@ public class JavaTextAreaPainter extends TextAreaPainter
     int y = textArea.lineToY(line);
     y += fm.getLeading() + fm.getMaxDescent();
 //    int height = fm.getHeight();
-    int start = textArea.getLineStartOffset(line) + problem.getPDELineStartOffset();
-    int pLength = problem.getPDELineStopOffset() + 1 - problem.getPDELineStartOffset();
-    
+    int start = textArea.getLineStartOffset(line)
+        + problem.getPDELineStartOffset();
+    int pLength = problem.getPDELineStopOffset() + 1
+        - problem.getPDELineStartOffset();
+
     try {
       String badCode = null;
       String goodCode = null;
       try {
         SyntaxDocument doc = textArea.getDocument();
         badCode = doc.getText(start, pLength);
-        goodCode = doc.getText(textArea.getLineStartOffset(line), problem.getPDELineStartOffset());
+        goodCode = doc.getText(textArea.getLineStartOffset(line),
+                               problem.getPDELineStartOffset());
         //log("paintErrorLine() LineText GC: " + goodCode);
         //log("paintErrorLine() LineText BC: " + badCode);
       } catch (BadLocationException bl) {
@@ -366,7 +382,8 @@ public class JavaTextAreaPainter extends TextAreaPainter
       }
 
       // Take care of offsets
-      int aw = fm.stringWidth(trimRight(badCode)) + textArea.getHorizontalOffset(); // apparent width. Whitespaces
+      int aw = fm.stringWidth(trimRight(badCode))
+          + textArea.getHorizontalOffset(); // apparent width. Whitespaces
       // to the left of line + text
       // width
       int rw = fm.stringWidth(badCode.trim()); // real width
@@ -379,7 +396,7 @@ public class JavaTextAreaPainter extends TextAreaPainter
       // gfx.fillRect(x1, y, rw, height);
 
       // Let the painting begin!
-      
+
       // Little rect at starting of a line containing errors - disabling it for now
 //      gfx.setColor(errorMarkerColor);
 //      if (isWarning) {
@@ -387,7 +404,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
 //      }
 //      gfx.fillRect(1, y + 2, 3, height - 2);
 
-      
       gfx.setColor(errorColor);
       if (isWarning) {
         gfx.setColor(warningColor);
@@ -413,7 +429,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
     // gfx.fillRect(2, y, 3, height);
   }
 
-  
   /**
    * Trims out trailing whitespaces (to the right)
    * 
@@ -431,7 +446,6 @@ public class JavaTextAreaPainter extends TextAreaPainter
     return newString;
   }
 
-  
   /**
    * Sets ErrorCheckerService and loads theme for TextAreaPainter(XQMode)
    * 
@@ -448,9 +462,14 @@ public class JavaTextAreaPainter extends TextAreaPainter
     warningMarkerColor = mode.getColor("editor.warningmarkercolor"); //, warningMarkerColor);
   }
 
-  
+  String methodName;
+
+  String className;
+
+  int parameters;
+
   public String getToolTipText(MouseEvent event) {
-    if (!getEditor().hasJavaTabs()) { 
+    if (!getEditor().hasJavaTabs()) {
       int off = textArea.xyToOffset(event.getX(), event.getY());
       if (off < 0) {
         setToolTipText(null);
@@ -481,8 +500,8 @@ public class JavaTextAreaPainter extends TextAreaPainter
           setToolTipText(null);
           return super.getToolTipText(event);
         }
-        if (!(Character.isLetterOrDigit(s.charAt(x)) || 
-            s.charAt(x) == '_' || s.charAt(x) == '$')) {
+        if (!(Character.isLetterOrDigit(s.charAt(x)) || s.charAt(x) == '_' || s
+            .charAt(x) == '$')) {
           setToolTipText(null);
           return super.getToolTipText(event);
         }
@@ -519,13 +538,24 @@ public class JavaTextAreaPainter extends TextAreaPainter
           setToolTipText(null);
           return super.getToolTipText(event);
         }
-        String tooltipText = errorCheckerService.getASTGenerator()
-            .getLabelForASTNode(line, word, xLS);
-
+        String tooltipText = "";
+//        String tooltipText = errorCheckerService.getASTGenerator()
+//            .getLabelForASTNode(line, word, xLS);
+        TreeMap<String, String> jdocMap = errorCheckerService.getASTGenerator()
+            .getJdocMap();
+        ASTNode temp = errorCheckerService.getASTGenerator()
+            .getASTNodeAt(line, word, xLS, false).getNode();
+        className = "PApplet";
+        methodName = null;
+        findRecursively(temp, word);
+        findReturnTypeRecur(temp, word);
+        System.out.println(className + "." + methodName + "(" + parameters
+            + ")");
+        //        temp = "asd";
         //      log(errorCheckerService.mainClassOffset + " MCO "
         //      + "|" + line + "| offset " + xLS + word + " <= offf: "+off+ "\n");
         if (tooltipText != null) {
-          return tooltipText;
+          return jdocMap.get(className + methodName + "(" + parameters + ")");
         }
       }
     }
@@ -534,351 +564,428 @@ public class JavaTextAreaPainter extends TextAreaPainter
     return super.getToolTipText(event);
   }
 
-  
-  // TweakMode code
-	protected int horizontalAdjustment = 0;
+  void findRecursively(ASTNode temp, String word) {
+    switch (temp.getNodeType()) {
+    case ASTNode.ASSIGNMENT:
+      if (((Assignment) temp).getLeftHandSide().toString().contains(word)) {
+        temp = ((Assignment) temp).getLeftHandSide();
+      } else {
+        temp = ((Assignment) temp).getRightHandSide();
+      }
+      findRecursively(temp, word);
+      break;
+    case ASTNode.EXPRESSION_STATEMENT:
+      temp = ((ExpressionStatement) temp).getExpression();
+      findRecursively(temp, word);
+      break;
+    case ASTNode.METHOD_INVOCATION:
+//        negativeOffset += ((MethodInvocation) temp).getExpression().toString().length()+1;
+      if (((MethodInvocation) temp).getName().toString().contains(word)) {
+        methodName = ((MethodInvocation) temp).getName()
+            .getFullyQualifiedName();
+        parameters = ((MethodInvocation) temp).arguments().size();
+      } else {
+        temp = ((MethodInvocation) temp).getExpression();
+        findRecursively(temp, word);
+      }
+      break;
+    }
+  }
 
-	public boolean interactiveMode = false;
+  void findReturnTypeRecur(ASTNode temp,String word) {
+    if (temp == null) {
+      return;
+    }
+    switch (temp.getNodeType()) {
+    case ASTNode.ASSIGNMENT:
+      if (((Assignment) temp).getLeftHandSide().toString().contains(word)) {
+        temp = ((Assignment) temp).getLeftHandSide();
+      } else {
+        temp = ((Assignment) temp).getRightHandSide();
+      }
+      findReturnTypeRecur(temp, word);
+      break;
+    case ASTNode.EXPRESSION_STATEMENT:
+      temp = ((ExpressionStatement) temp).getExpression();
+      findReturnTypeRecur(temp,word);
+      break;
+    case ASTNode.METHOD_INVOCATION:
+      temp = ((MethodInvocation) temp).getExpression();
+      findReturnTypeRecur(temp,word);
+      break;
+    case ASTNode.SIMPLE_NAME:
+      temp = ASTGenerator.findDeclaration((Name) temp);//find the declaration of this.
+      findReturnTypeRecur(temp,word);
+      break;
+    case ASTNode.FIELD_DECLARATION:
+      className = ((SimpleName) (((SimpleType) (((FieldDeclaration) temp)
+          .getType())).getName())).getFullyQualifiedName();
+      break;
+    case ASTNode.VARIABLE_DECLARATION_STATEMENT:
+      className = ((SimpleName) (((SimpleType) (((VariableDeclarationStatement) temp)
+          .getType())).getName())).getFullyQualifiedName();
+      break;
+    }
+  }
+
+//    if (((MethodInvocation) temp).getExpression().getNodeType() == ASTNode.SIMPLE_NAME) {
+//      ASTNode temp2 = errorCheckerService
+//          .getASTGenerator()
+//          .getASTNodeAt(line,
+//                        ((MethodInvocation) temp).getExpression().toString(),
+//                        0, false).getNode();
+////          temp2 = errorCheckerService.getASTGenerator().findDeclaration();
+//      if (temp2.getNodeType() == ASTNode.VARIABLE_DECLARATION_STATEMENT) {
+//        VariableDeclarationStatement variableDeclarationStatement = (VariableDeclarationStatement) temp2;
+//        SimpleType simpleType = (SimpleType) variableDeclarationStatement
+//            .getType();
+//        SimpleName simpleName = (SimpleName) simpleType.getName();
+//        className = simpleName.getFullyQualifiedName();
+//      }
+//      if (temp2.getNodeType() == ASTNode.FIELD_DECLARATION) {
+//        FieldDeclaration fieldDeclaration = (FieldDeclaration) temp2;
+//        SimpleType simpleType = (SimpleType) fieldDeclaration.getType();
+//        SimpleName simpleName = (SimpleName) simpleType.getName();
+//        className = simpleName.getFullyQualifiedName();
+//      }
+//    }
+//    }
+  //              System.out.println(methodInvocation.typeArguments());
+  //              System.out.println(methodInvocation.properties());
+  //              System.out.println(methodInvocation.getExpression() + " name = " + methodInvocation.getName() + " " + methodInvocation.arguments());
+//  }
+
+  // TweakMode code
+  protected int horizontalAdjustment = 0;
+
+  public boolean interactiveMode = false;
+
 //	public ArrayList<Handle> handles[];
 //	public ArrayList<ColorControlBox> colorBoxes[];
-	public List<List<Handle>> handles;
-	public List<List<ColorControlBox>> colorBoxes;
+  public List<List<Handle>> handles;
 
-	public Handle mouseHandle = null;
-	public ColorSelector colorSelector;
+  public List<List<ColorControlBox>> colorBoxes;
 
-	int cursorType;
-	BufferedImage cursorImg = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+  public Handle mouseHandle = null;
 
-	// Create a new blank cursor.
-	Cursor blankCursor = Toolkit.getDefaultToolkit().createCustomCursor(
-	    cursorImg, new Point(0, 0), "blank cursor");
+  public ColorSelector colorSelector;
 
+  int cursorType;
 
-	@Override
-	synchronized public void paint(Graphics gfx) {
-		super.paint(gfx);
+  BufferedImage cursorImg = new BufferedImage(16, 16,
+                                              BufferedImage.TYPE_INT_ARGB);
 
-		if (interactiveMode && handles != null) {
-			int currentTab = getCurrentCodeIndex();
-			// enable anti-aliasing
-			Graphics2D g2d = (Graphics2D)gfx;
-			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                				RenderingHints.VALUE_ANTIALIAS_ON);
+  // Create a new blank cursor.
+  Cursor blankCursor = Toolkit.getDefaultToolkit()
+      .createCustomCursor(cursorImg, new Point(0, 0), "blank cursor");
 
-			for (Handle n : handles.get(currentTab)) {
-				// update n position and width, and draw it
-				int lineStartChar = textArea.getLineStartOffset(n.line);
-				int x = textArea.offsetToX(n.line, n.newStartChar - lineStartChar);
-				int y = textArea.lineToY(n.line) + fm.getHeight() + 1;
-				int end = textArea.offsetToX(n.line, n.newEndChar - lineStartChar);
-				n.setPos(x, y);
-				n.setWidth(end - x);
-				n.draw(g2d, n==mouseHandle);
-			}
+  @Override
+  synchronized public void paint(Graphics gfx) {
+    super.paint(gfx);
 
-			// draw color boxes
-			for (ColorControlBox cBox: colorBoxes.get(currentTab)) {
-				int lineStartChar = textArea.getLineStartOffset(cBox.getLine());
-				int x = textArea.offsetToX(cBox.getLine(), cBox.getCharIndex() - lineStartChar);
-				int y = textArea.lineToY(cBox.getLine()) + fm.getDescent();
-				cBox.setPos(x, y+1);
-				cBox.draw(g2d);
-			}
-		}
-	}
+    if (interactiveMode && handles != null) {
+      int currentTab = getCurrentCodeIndex();
+      // enable anti-aliasing
+      Graphics2D g2d = (Graphics2D) gfx;
+      g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                           RenderingHints.VALUE_ANTIALIAS_ON);
 
-	
-	public void startInterativeMode() {
-	  addMouseListener(this);
-	  addMouseMotionListener(this);
-	  interactiveMode = true;
-	  setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-		repaint();
-	}
+      for (Handle n : handles.get(currentTab)) {
+        // update n position and width, and draw it
+        int lineStartChar = textArea.getLineStartOffset(n.line);
+        int x = textArea.offsetToX(n.line, n.newStartChar - lineStartChar);
+        int y = textArea.lineToY(n.line) + fm.getHeight() + 1;
+        int end = textArea.offsetToX(n.line, n.newEndChar - lineStartChar);
+        n.setPos(x, y);
+        n.setWidth(end - x);
+        n.draw(g2d, n == mouseHandle);
+      }
 
-	
-	public void stopInteractiveMode() {
-		interactiveMode = false;
+      // draw color boxes
+      for (ColorControlBox cBox : colorBoxes.get(currentTab)) {
+        int lineStartChar = textArea.getLineStartOffset(cBox.getLine());
+        int x = textArea.offsetToX(cBox.getLine(), cBox.getCharIndex()
+            - lineStartChar);
+        int y = textArea.lineToY(cBox.getLine()) + fm.getDescent();
+        cBox.setPos(x, y + 1);
+        cBox.draw(g2d);
+      }
+    }
+  }
 
-		if (colorSelector != null) {
-			// close color selector
-			colorSelector.hide();
-			colorSelector.frame.dispatchEvent(new WindowEvent(colorSelector.frame, WindowEvent.WINDOW_CLOSING));
-		}
+  public void startInterativeMode() {
+    addMouseListener(this);
+    addMouseMotionListener(this);
+    interactiveMode = true;
+    setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+    repaint();
+  }
 
-		setCursor(new Cursor(Cursor.TEXT_CURSOR));
-		repaint();
-	}
+  public void stopInteractiveMode() {
+    interactiveMode = false;
 
-	
-	// Update the interface
-	//public void updateInterface(ArrayList<Handle> handles[], ArrayList<ColorControlBox> colorBoxes[]) {
-	public void updateInterface(List<List<Handle>> handles, List<List<ColorControlBox>> colorBoxes) {
-		this.handles = handles;
-		this.colorBoxes = colorBoxes;
+    if (colorSelector != null) {
+      // close color selector
+      colorSelector.hide();
+      colorSelector.frame
+          .dispatchEvent(new WindowEvent(colorSelector.frame,
+                                         WindowEvent.WINDOW_CLOSING));
+    }
 
-		initInterfacePositions();
-		repaint();
-	}
+    setCursor(new Cursor(Cursor.TEXT_CURSOR));
+    repaint();
+  }
 
-	/**
-	* Initialize all the number changing interfaces.
-	* synchronize this method to prevent the execution of 'paint' in the middle.
-	* (don't paint while we make changes to the text of the editor)
-	*/
-	public synchronized void initInterfacePositions() {
-		SketchCode[] code = getEditor().getSketch().getCode();
-		int prevScroll = textArea.getVerticalScrollPosition();
-		String prevText = textArea.getText();
+  // Update the interface
+  //public void updateInterface(ArrayList<Handle> handles[], ArrayList<ColorControlBox> colorBoxes[]) {
+  public void updateInterface(List<List<Handle>> handles,
+                              List<List<ColorControlBox>> colorBoxes) {
+    this.handles = handles;
+    this.colorBoxes = colorBoxes;
 
-		for (int tab=0; tab<code.length; tab++) {
-			String tabCode = getEditor().baseCode[tab];
-			textArea.setText(tabCode);
-			for (Handle n : handles.get(tab)) {
-				int lineStartChar = textArea.getLineStartOffset(n.line);
-				int x = textArea.offsetToX(n.line, n.newStartChar - lineStartChar);
-				int end = textArea.offsetToX(n.line, n.newEndChar - lineStartChar);
-				int y = textArea.lineToY(n.line) + fm.getHeight() + 1;
-				n.initInterface(x, y, end-x, fm.getHeight());
-			}
+    initInterfacePositions();
+    repaint();
+  }
 
-			for (ColorControlBox cBox : colorBoxes.get(tab)) {
-				int lineStartChar = textArea.getLineStartOffset(cBox.getLine());
-				int x = textArea.offsetToX(cBox.getLine(), cBox.getCharIndex() - lineStartChar);
-				int y = textArea.lineToY(cBox.getLine()) + fm.getDescent();
-				cBox.initInterface(this, x, y+1, fm.getHeight()-2, fm.getHeight()-2);
-			}
-		}
+  /**
+   * Initialize all the number changing interfaces. synchronize this method to
+   * prevent the execution of 'paint' in the middle. (don't paint while we make
+   * changes to the text of the editor)
+   */
+  public synchronized void initInterfacePositions() {
+    SketchCode[] code = getEditor().getSketch().getCode();
+    int prevScroll = textArea.getVerticalScrollPosition();
+    String prevText = textArea.getText();
 
-		textArea.setText(prevText);
-		textArea.scrollTo(prevScroll, 0);
-	}
+    for (int tab = 0; tab < code.length; tab++) {
+      String tabCode = getEditor().baseCode[tab];
+      textArea.setText(tabCode);
+      for (Handle n : handles.get(tab)) {
+        int lineStartChar = textArea.getLineStartOffset(n.line);
+        int x = textArea.offsetToX(n.line, n.newStartChar - lineStartChar);
+        int end = textArea.offsetToX(n.line, n.newEndChar - lineStartChar);
+        int y = textArea.lineToY(n.line) + fm.getHeight() + 1;
+        n.initInterface(x, y, end - x, fm.getHeight());
+      }
 
-	
-	/**
-	 * Take the saved code of the current tab and replace
-	 * all numbers with their current values.
-	 * Update TextArea with the new code.
-	 */
-	public void updateCodeText() {
-		int charInc = 0;
-		int currentTab = getCurrentCodeIndex();
-		SketchCode sc = getEditor().getSketch().getCode(currentTab);
-		String code = getEditor().baseCode[currentTab];
+      for (ColorControlBox cBox : colorBoxes.get(tab)) {
+        int lineStartChar = textArea.getLineStartOffset(cBox.getLine());
+        int x = textArea.offsetToX(cBox.getLine(), cBox.getCharIndex()
+            - lineStartChar);
+        int y = textArea.lineToY(cBox.getLine()) + fm.getDescent();
+        cBox.initInterface(this, x, y + 1, fm.getHeight() - 2,
+                           fm.getHeight() - 2);
+      }
+    }
 
-		for (Handle n : handles.get(currentTab)) {
-			int s = n.startChar + charInc;
-			int e = n.endChar + charInc;
-			code = replaceString(code, s, e, n.strNewValue);
-			n.newStartChar = n.startChar + charInc;
-			charInc += n.strNewValue.length() - n.strValue.length();
-			n.newEndChar = n.endChar + charInc;
-		}
+    textArea.setText(prevText);
+    textArea.scrollTo(prevScroll, 0);
+  }
 
-		replaceTextAreaCode(code);
-		// update also the sketch code for later
-		sc.setProgram(code);
-	}
+  /**
+   * Take the saved code of the current tab and replace all numbers with their
+   * current values. Update TextArea with the new code.
+   */
+  public void updateCodeText() {
+    int charInc = 0;
+    int currentTab = getCurrentCodeIndex();
+    SketchCode sc = getEditor().getSketch().getCode(currentTab);
+    String code = getEditor().baseCode[currentTab];
 
-	
-	// don't paint while we do the stuff below
-	private synchronized void replaceTextAreaCode(String code) {
-	  // by default setText will scroll all the way to the end
-	  // remember current scroll position
-	  int scrollLine = textArea.getVerticalScrollPosition();
-	  int scrollHor = textArea.getHorizontalScrollPosition();
-	  textArea.setText(code);
-	  textArea.setOrigin(scrollLine, -scrollHor);
-	}
+    for (Handle n : handles.get(currentTab)) {
+      int s = n.startChar + charInc;
+      int e = n.endChar + charInc;
+      code = replaceString(code, s, e, n.strNewValue);
+      n.newStartChar = n.startChar + charInc;
+      charInc += n.strNewValue.length() - n.strValue.length();
+      n.newEndChar = n.endChar + charInc;
+    }
 
-	
-	public String replaceString(String str, int start, int end, String put) {
-		return str.substring(0, start) + put + str.substring(end, str.length());
-	}
+    replaceTextAreaCode(code);
+    // update also the sketch code for later
+    sc.setProgram(code);
+  }
 
-	
-	public void updateCursor(int mouseX, int mouseY) {
-		int currentTab = getCurrentCodeIndex();
-		for (Handle n : handles.get(currentTab)) {
-			if (n.pick(mouseX, mouseY)) {
-				cursorType = Cursor.W_RESIZE_CURSOR;
-				setCursor(new Cursor(cursorType));
-				return;
-			}
-		}
+  // don't paint while we do the stuff below
+  private synchronized void replaceTextAreaCode(String code) {
+    // by default setText will scroll all the way to the end
+    // remember current scroll position
+    int scrollLine = textArea.getVerticalScrollPosition();
+    int scrollHor = textArea.getHorizontalScrollPosition();
+    textArea.setText(code);
+    textArea.setOrigin(scrollLine, -scrollHor);
+  }
 
-		for (ColorControlBox colorBox : colorBoxes.get(currentTab)) {
-			if (colorBox.pick(mouseX, mouseY)) {
-				cursorType = Cursor.HAND_CURSOR;
-				setCursor(new Cursor(cursorType));
-				return;
-			}
-		}
+  public String replaceString(String str, int start, int end, String put) {
+    return str.substring(0, start) + put + str.substring(end, str.length());
+  }
 
-		if (cursorType == Cursor.W_RESIZE_CURSOR ||
-		    cursorType == Cursor.HAND_CURSOR ||
-		    cursorType == -1) {
-		  cursorType = Cursor.DEFAULT_CURSOR;
-			setCursor(new Cursor(cursorType));
-		}
-	}
-	
-	
-	private void showHideColorBoxes(int y) {
-	  // display the box if the mouse if in the same line.
-	  // always keep the color box of the color selector.
-		int currentTab = getCurrentCodeIndex();
+  public void updateCursor(int mouseX, int mouseY) {
+    int currentTab = getCurrentCodeIndex();
+    for (Handle n : handles.get(currentTab)) {
+      if (n.pick(mouseX, mouseY)) {
+        cursorType = Cursor.W_RESIZE_CURSOR;
+        setCursor(new Cursor(cursorType));
+        return;
+      }
+    }
 
-		boolean change = false;
-		for (ColorControlBox box : colorBoxes.get(currentTab)) {
-			if (box.setMouseY(y)) {
-				change = true;
-			}
-		}
+    for (ColorControlBox colorBox : colorBoxes.get(currentTab)) {
+      if (colorBox.pick(mouseX, mouseY)) {
+        cursorType = Cursor.HAND_CURSOR;
+        setCursor(new Cursor(cursorType));
+        return;
+      }
+    }
 
-		if (colorSelector != null) {
-			colorSelector.colorBox.visible = true;
-		}
+    if (cursorType == Cursor.W_RESIZE_CURSOR
+        || cursorType == Cursor.HAND_CURSOR || cursorType == -1) {
+      cursorType = Cursor.DEFAULT_CURSOR;
+      setCursor(new Cursor(cursorType));
+    }
+  }
 
-		if (change) {
-			repaint();
-		}
-	}
+  private void showHideColorBoxes(int y) {
+    // display the box if the mouse if in the same line.
+    // always keep the color box of the color selector.
+    int currentTab = getCurrentCodeIndex();
 
-	@Override
-	public void mouseDragged(MouseEvent e) {
-		if (mouseHandle != null) {
-			// set the current drag amount of the arrows
-			mouseHandle.setCurrentX(e.getX());
+    boolean change = false;
+    for (ColorControlBox box : colorBoxes.get(currentTab)) {
+      if (box.setMouseY(y)) {
+        change = true;
+      }
+    }
 
-			// update code text with the new value
-			updateCodeText();
+    if (colorSelector != null) {
+      colorSelector.colorBox.visible = true;
+    }
 
-			if (colorSelector != null) {
-				colorSelector.refreshColor();
-			}
+    if (change) {
+      repaint();
+    }
+  }
 
-			repaint();
-		}
-	}
+  @Override
+  public void mouseDragged(MouseEvent e) {
+    if (mouseHandle != null) {
+      // set the current drag amount of the arrows
+      mouseHandle.setCurrentX(e.getX());
 
-	
-	@Override
-	public void mouseExited(MouseEvent e) {
-	}
+      // update code text with the new value
+      updateCodeText();
 
-	
-	@Override
-	public void mousePressed(MouseEvent e) {
-		int currentTab = getCurrentCodeIndex();
-		// check for clicks on number handles
-		for (Handle n : handles.get(currentTab)) {
-			if (n.pick(e.getX(), e.getY())) {
-				cursorType = -1;
-				this.setCursor(blankCursor);
-				mouseHandle = n;
-				mouseHandle.setCenterX(e.getX());
-				repaint();
-				return;
-			}
-		}
+      if (colorSelector != null) {
+        colorSelector.refreshColor();
+      }
 
-		// check for clicks on color boxes
-		for (ColorControlBox box : colorBoxes.get(currentTab)) {
-			if (box.pick(e.getX(), e.getY())) {
-				if (colorSelector != null) {
-					// we already show a color selector, close it
-					colorSelector.frame.dispatchEvent(new WindowEvent(colorSelector.frame, WindowEvent.WINDOW_CLOSING));
-				}
+      repaint();
+    }
+  }
 
-				colorSelector = new ColorSelector(box);
-				colorSelector.frame.addWindowListener(new WindowAdapter() {
-				        public void windowClosing(WindowEvent e) {
-				        	colorSelector.frame.setVisible(false);
-				        	colorSelector = null;
-				        }
-				      });
-				colorSelector.show(this.getLocationOnScreen().x + e.getX() + 30,
-						this.getLocationOnScreen().y + e.getY() - 130);
-			}
-		}
-	}
+  @Override
+  public void mouseExited(MouseEvent e) {
+  }
 
-	
-	@Override
-	public void mouseReleased(MouseEvent e) {
-		if (mouseHandle != null) {
-			mouseHandle.resetProgress();
-			mouseHandle = null;
+  @Override
+  public void mousePressed(MouseEvent e) {
+    int currentTab = getCurrentCodeIndex();
+    // check for clicks on number handles
+    for (Handle n : handles.get(currentTab)) {
+      if (n.pick(e.getX(), e.getY())) {
+        cursorType = -1;
+        this.setCursor(blankCursor);
+        mouseHandle = n;
+        mouseHandle.setCenterX(e.getX());
+        repaint();
+        return;
+      }
+    }
 
-			updateCursor(e.getX(), e.getY());
-			repaint();
-		}
-	}
+    // check for clicks on color boxes
+    for (ColorControlBox box : colorBoxes.get(currentTab)) {
+      if (box.pick(e.getX(), e.getY())) {
+        if (colorSelector != null) {
+          // we already show a color selector, close it
+          colorSelector.frame
+              .dispatchEvent(new WindowEvent(colorSelector.frame,
+                                             WindowEvent.WINDOW_CLOSING));
+        }
 
-	
-	@Override
-	public void mouseMoved(MouseEvent e) {
-		updateCursor(e.getX(), e.getY());
+        colorSelector = new ColorSelector(box);
+        colorSelector.frame.addWindowListener(new WindowAdapter() {
+          public void windowClosing(WindowEvent e) {
+            colorSelector.frame.setVisible(false);
+            colorSelector = null;
+          }
+        });
+        colorSelector.show(this.getLocationOnScreen().x + e.getX() + 30,
+                           this.getLocationOnScreen().y + e.getY() - 130);
+      }
+    }
+  }
 
-		if (!Settings.alwaysShowColorBoxes) {
-			showHideColorBoxes(e.getY());
-		}
-	}
+  @Override
+  public void mouseReleased(MouseEvent e) {
+    if (mouseHandle != null) {
+      mouseHandle.resetProgress();
+      mouseHandle = null;
 
-	
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-	}
+      updateCursor(e.getX(), e.getY());
+      repaint();
+    }
+  }
 
-	
-	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-	}
+  @Override
+  public void mouseMoved(MouseEvent e) {
+    updateCursor(e.getX(), e.getY());
 
-	
-	// . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
-	
-	
-	private JavaEditor getEditor() {
-	  return ((JavaTextArea) textArea).editor;
-	}
-	
-	
-	private int getCurrentCodeIndex() {
+    if (!Settings.alwaysShowColorBoxes) {
+      showHideColorBoxes(e.getY());
+    }
+  }
+
+  @Override
+  public void mouseClicked(MouseEvent e) {
+    // TODO Auto-generated method stub
+  }
+
+  @Override
+  public void mouseEntered(MouseEvent e) {
+    // TODO Auto-generated method stub
+  }
+
+  // . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+  private JavaEditor getEditor() {
+    return ((JavaTextArea) textArea).editor;
+  }
+
+  private int getCurrentCodeIndex() {
     return getEditor().getSketch().getCurrentCodeIndex();
   }
 
-	
 //	private int getGutterMargins() {
 //	  return ((JavaTextArea) textArea).getGutterMargins();
 //	}
-	
-	
+
 //	private int getGutterWidth() {
 //	  return ((JavaTextArea) textArea).getGutterWidth();
 //	}
 
-	
-	private JavaTextArea getTextArea() {
-	  return (JavaTextArea) textArea;
-	}
-	
-	
+  private JavaTextArea getTextArea() {
+    return (JavaTextArea) textArea;
+  }
+
 //	private Color getGutterBgColor() {
 //    return ((JavaTextArea) textArea).gutterBgColor;
 //  }
-	
-	
+
 //	private boolean isDebugToolbarEnabled() {
 //	  AtomicBoolean enabled = getEditor().debugToolbarEnabled;
 //	  return (enabled != null && enabled.get());
 //	}
-	
-	
+
 //	private boolean hasJavaTabs() {
 //	  return getEditor().hasJavaTabs();
 //	}

@@ -776,6 +776,7 @@ public class JavaTextArea extends JEditTextArea {
         }
       }
       lastX = me.getX();
+      
     }
   }
 

@@ -423,19 +423,40 @@ public class ASTGenerator {
 
   protected TreeMap<String, String> jdocMap;
 
-  protected void loadJavaDoc() {
+  public TreeMap<String, String> getJdocMap() {
+	return jdocMap;
+  }
+
+  public void setJdocMap(TreeMap<String, String> jdocMap) {
+	this.jdocMap = jdocMap;
+  }
+
+protected void loadJavaDocp5() {
     jdocMap = new TreeMap<String, String>();
     // presently loading only p5 reference for PApplet
     Thread t = new Thread(new Runnable() {
 
       @Override
       public void run() {
-        JavadocHelper.loadJavaDoc(jdocMap, editor.getMode().getReferenceFolder());
+        JavadocHelper.loadJavaDocp5(jdocMap, editor.getMode().getReferenceFolder());
       }
     });
     t.start();
 
   }
+  protected void loadJavaDoc() {
+	    jdocMap = new TreeMap<String, String>();
+	    // presently loading only p5 reference for PApplet
+	    Thread t = new Thread(new Runnable() {
+
+	      @Override
+	      public void run() {
+	        JavadocHelper.loadJavaDoc(jdocMap, new File("/home/akarshit/Documents/processing/build/javadoc/everything/processing"));
+	      }
+	    });
+	    t.start();
+
+	  }
 
   public DefaultMutableTreeNode buildAST(CompilationUnit cu) {
     return buildAST(errorCheckerService.sourceCode, cu);
@@ -494,7 +515,7 @@ public class ASTGenerator {
 
   /**
    * Find the parent of the expression in a().b, this would give me the return
-   * type of a(), so that we can find all children of a() begininng with b
+   * type of a(), so that we can find all children of a() beginning with b
    * 
    * @param nearestNode
    * @param expression
@@ -547,6 +568,7 @@ public class ASTGenerator {
       } else { 
         //User typed "abc.hello.by" (bye being complete), so need to resolve "abc.hello." only
         return findDeclaration2(((QualifiedName) expression).getQualifier(),
+        		
                           nearestNode);
       }
     }
@@ -1700,7 +1722,7 @@ public class ASTGenerator {
     String nodeLabel = null;
     String nameOfNode = null; // The node name which is to be scrolled to
 
-    // Obtain correspondin java code at that line, match offsets
+    // Obtain corresponding java code at that line, match offsets
     if (lineNode != null) {
       String pdeCodeLine = errorCheckerService.getPDECodeAtLine(editor
           .getSketch().getCurrentCodeIndex(), lineNumber);
@@ -1752,6 +1774,8 @@ public class ASTGenerator {
           if (scrollOnly) {
             editor.statusMessage(simpName + " is not defined in this sketch",
                                  JavaEditor.STATUS_ERR);
+          }else{
+        	  return new ASTNodeWrapper(lineNode);
           }
         }
 

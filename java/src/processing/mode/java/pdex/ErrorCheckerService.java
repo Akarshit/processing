@@ -250,6 +250,7 @@ public class ErrorCheckerService implements Runnable {
   protected void initParser() {
     try {
       parser = ASTParser.newParser(AST.JLS8);
+      parser.setResolveBindings(true);
     } catch (Exception e) {
       System.err.println("Experimental Mode initialization failed. "
           + "Are you running the right version of Processing? ");
@@ -336,6 +337,7 @@ public class ErrorCheckerService implements Runnable {
     // Completion wouldn't be complete, but it'd be still something
     // better than nothing
     astGenerator.buildAST(cu); 
+    astGenerator.loadJavaDoc();//TODO should this be here ?
     handleErrorCheckingToggle();
     while (!stopThread.get()) {
       try {
@@ -569,6 +571,7 @@ public class ErrorCheckerService implements Runnable {
     syntaxErrors.set(true);
     containsErrors.set(true);
     parser.setSource(sourceCode.toCharArray());
+//    parser.setProject();
     parser.setKind(ASTParser.K_COMPILATION_UNIT);
 
     Map<String, String> options = JavaCore.getOptions();
