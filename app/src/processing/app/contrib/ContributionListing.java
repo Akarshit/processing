@@ -88,9 +88,15 @@ public class ContributionListing {
     advertisedContributions.clear();
     advertisedContributions.addAll(parseContribList(listingFile));
     for (Contribution contribution : advertisedContributions) {
-      addContribution(contribution);
+      addContribution(contribution, true);
     }
+    
     Collections.sort(allContributions, nameComparator);
+    
+    for (ContributionChangeListener contributionChangeListener : listeners) {
+      contributionChangeListener.updatePanelOrdering();
+    }
+    
   }
 
 
@@ -102,16 +108,21 @@ public class ContributionListing {
     for (Contribution contribution : installedContributions) {
       Contribution existingContribution = getContribution(contribution);
       if (existingContribution != null) {
-        replaceContribution(existingContribution, contribution);
+        replaceContribution(existingContribution, contribution, true);
       //} else if (contribution != null) {  // 130925 why would this be necessary?
       } else {
-        addContribution(contribution);
+        addContribution(contribution, true);
       }
     }
+    
+    for (ContributionChangeListener contributionChangeListener : listeners) {
+      contributionChangeListener.updatePanelOrdering();
+    }
+    
   }
 
 
-  protected void replaceContribution(Contribution oldLib, Contribution newLib) {
+  protected void replaceContribution(Contribution oldLib, Contribution newLib, boolean sync) {
     if (oldLib != null && newLib != null) {
       for (String category : oldLib.getCategories()) {
         if (librariesByCategory.containsKey(category)) {
@@ -139,12 +150,12 @@ public class ContributionListing {
         }
       }
 
-      notifyChange(oldLib, newLib);
+      notifyChange(oldLib, newLib, sync);
     }
   }
 
 
-  private void addContribution(Contribution contribution) {
+  private void addContribution(Contribution contribution, boolean sync) {
     if (contribution.getImports() != null) {
       for (String importName : contribution.getImports()) {
         librariesByImportHeader.put(importName, contribution);
@@ -162,13 +173,13 @@ public class ContributionListing {
         librariesByCategory.put(category, list);
       }
       allContributions.add(contribution);
-      notifyAdd(contribution);
+      notifyAdd(contribution, sync);
       Collections.sort(allContributions, nameComparator);
     }
   }
 
 
-  protected void removeContribution(Contribution contribution) {
+  protected void removeContribution(Contribution contribution, boolean sync) {
     for (String category : contribution.getCategories()) {
       if (librariesByCategory.containsKey(category)) {
         librariesByCategory.get(category).remove(contribution);
@@ -180,7 +191,7 @@ public class ContributionListing {
       }
     }
     allContributions.remove(contribution);
-    notifyRemove(contribution);
+    notifyRemove(contribution, sync);
   }
 
 
@@ -356,23 +367,36 @@ public class ContributionListing {
   }
 
 
-  private void notifyRemove(Contribution contribution) {
+  private void notifyRemove(Contribution contribution, boolean sync) {
     for (ContributionChangeListener listener : listeners) {
-      listener.contributionRemoved(contribution);
+      if (sync == true) {
+        listener.contributionRemoved(contribution);
+      } else {
+        listener.asyncContributionRemoved(contribution);
+      }
     }
   }
 
 
-  private void notifyAdd(Contribution contribution) {
+  private void notifyAdd(Contribution contribution, boolean sync) {
     for (ContributionChangeListener listener : listeners) {
-      listener.contributionAdded(contribution);
+      if (sync == true) {
+        listener.contributionAdded(contribution);
+      } else {
+        listener.asyncContributionAdded(contribution);
+      }
     }
   }
 
 
-  private void notifyChange(Contribution oldLib, Contribution newLib) {
+  private void notifyChange(Contribution oldLib, Contribution newLib,
+                            boolean sync) {
     for (ContributionChangeListener listener : listeners) {
-      listener.contributionChanged(oldLib, newLib);
+      if (sync == true) {
+        listener.contributionChanged(oldLib, newLib);
+      } else {
+        listener.asyncContributionChanged(oldLib, newLib);
+      }
     }
   }
 

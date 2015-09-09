@@ -409,6 +409,10 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
     return name.toString();
   }
 
+  public void updatePanelOrdering() {
+    updatePanelOrdering(panelByContribution.keySet());
+  }
+  
   void updatePanelOrdering(Set<Contribution> contributionsSet) {
     /*   int row = 0;
     for (Entry<Contribution, ContributionPanel> entry : panelByContribution.entrySet()) {
@@ -445,8 +449,24 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
     }
   }
 
-
   public void contributionAdded(final Contribution contribution) {
+    if (filter.matches(contribution)) {
+      if (!panelByContribution.containsKey(contribution)) {
+        ContributionPanel newPanel = new ContributionPanel(ContributionListPanel.this);
+        synchronized (panelByContribution) {
+          panelByContribution.put(contribution, newPanel);
+        }
+        if (newPanel != null) {
+          newPanel.setContribution(contribution);
+          add(newPanel);
+//          updatePanelOrdering(panelByContribution.keySet());
+//          updateColors(); // XXX this is the place
+        }
+      }
+    }
+  }
+
+  public void asyncContributionAdded(final Contribution contribution) {
     if (filter.matches(contribution)) {
       EventQueue.invokeLater(new Runnable() {
         public void run() {
@@ -459,7 +479,7 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
               newPanel.setContribution(contribution);
               add(newPanel);
               updatePanelOrdering(panelByContribution.keySet());
-              updateColors();  // XXX this is the place
+              updateColors(); // XXX this is the place
             }
           }
         }
@@ -467,8 +487,20 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
     }
   }
 
-
   public void contributionRemoved(final Contribution contribution) {
+    synchronized (panelByContribution) {
+      ContributionPanel panel = panelByContribution.get(contribution);
+      if (panel != null) {
+        remove(panel);
+        panelByContribution.remove(contribution);
+      }
+    }
+//    updatePanelOrdering(panelByContribution.keySet());
+//    updateColors();
+//    updateUI();
+  }
+
+  public void asyncContributionRemoved(final Contribution contribution) {
     EventQueue.invokeLater(new Runnable() {
       public void run() {
         synchronized (panelByContribution) {
@@ -485,9 +517,23 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
     });
   }
 
-
   public void contributionChanged(final Contribution oldContrib,
                                   final Contribution newContrib) {
+    synchronized (panelByContribution) {
+      ContributionPanel panel = panelByContribution.get(oldContrib);
+      if (panel == null) {
+        contributionAdded(newContrib);
+      } else {
+        panelByContribution.remove(oldContrib);
+        panel.setContribution(newContrib);
+        panelByContribution.put(newContrib, panel);
+//        updatePanelOrdering(panelByContribution.keySet());
+      }
+    }
+  }
+
+  public void asyncContributionChanged(final Contribution oldContrib,
+                                       final Contribution newContrib) {
     EventQueue.invokeLater(new Runnable() {
       public void run() {
         synchronized (panelByContribution) {
@@ -504,7 +550,6 @@ public class ContributionListPanel extends JPanel implements Scrollable, Contrib
       }
     });
   }
-
 
   public void filterLibraries(List<Contribution> filteredContributions) {
     synchronized (panelByContribution) {

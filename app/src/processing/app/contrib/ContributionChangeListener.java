@@ -26,4 +26,8 @@ public interface ContributionChangeListener {
   public void contributionAdded(Contribution Contribution);
   public void contributionRemoved(Contribution Contribution);
   public void contributionChanged(Contribution oldLib, Contribution newLib);
+  public void asyncContributionAdded(Contribution Contribution);
+  public void asyncContributionRemoved(Contribution Contribution);
+  public void asyncContributionChanged(Contribution oldLib, Contribution newLib);
+  public void updatePanelOrdering();
 }

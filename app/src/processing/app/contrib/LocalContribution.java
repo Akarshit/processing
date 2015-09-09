@@ -461,16 +461,16 @@ public abstract class LocalContribution extends Contribution {
         contribListing.getAvailableContribution(this);
 
       if (advertisedVersion == null) {
-        contribListing.removeContribution(this);
+        contribListing.removeContribution(this, false);
       } else {
-        contribListing.replaceContribution(this, advertisedVersion);
+        contribListing.replaceContribution(this, advertisedVersion, false);
       }
 
     } else {
       // There was a failure backing up the folder
       if (!doBackup || (doBackup && backup(editor, false, status))) {
         if (setDeletionFlag(true)) {
-          contribListing.replaceContribution(this, this);
+          contribListing.replaceContribution(this, this, false);
         }
       } else {
         status.setErrorMessage("Could not delete the contribution's files");

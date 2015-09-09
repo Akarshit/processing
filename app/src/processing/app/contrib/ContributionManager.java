@@ -174,7 +174,7 @@ public class ContributionManager {
                 ad.install(editor.getBase(), contribZip, false, status);
 
               if (contribution != null) {
-                listing.replaceContribution(ad, contribution);
+                listing.replaceContribution(ad, contribution, false);
                 /*
                 if (contribution.getType() == ContributionType.MODE) {
                   List<ModeContribution> contribModes = editor.getBase().getModeContribs();
@@ -261,7 +261,7 @@ public class ContributionManager {
                                                         false, null);
 
             if (contribution != null) {
-              listing.replaceContribution(ad, contribution);
+              listing.replaceContribution(ad, contribution, false);
 //              if (contribution.getType() == ContributionType.MODE) {
 //                List<ModeContribution> contribModes = base.getModeContribs();
 //                if (contribModes != null && !contribModes.contains(contribution)) {
@@ -395,7 +395,7 @@ public class ContributionManager {
               ad.install(base, contribZip, false, null);
 
             if (contribution != null) {
-              listing.replaceContribution(ad, contribution);
+              listing.replaceContribution(ad, contribution, false);
 //              if (base.getActiveEditor() != null) {
 //                refreshInstalled(base.getActiveEditor());
 //              }
@@ -586,7 +586,7 @@ public class ContributionManager {
         if (file.getName().equals(contrib.getName())) {
           file.delete();
           installOnStartUp(base, contrib);
-          listing.replaceContribution(contrib, contrib);
+          listing.replaceContribution(contrib, contrib, false);
         }
       }
     }
@@ -639,7 +639,7 @@ public class ContributionManager {
     while (iter2.hasNext()) {
       AvailableContribution contribToUpdate = iter2.next();
       installOnStartUp(base, contribToUpdate);
-      listing.replaceContribution(contribToUpdate, contribToUpdate);
+      listing.replaceContribution(contribToUpdate, contribToUpdate, false);
     }
   }
 

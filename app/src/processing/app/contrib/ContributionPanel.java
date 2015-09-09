@@ -146,7 +146,7 @@ class ContributionPanel extends JPanel {
         if (contrib instanceof LocalContribution) {
           LocalContribution installed = (LocalContribution) contrib;
           installed.setDeletionFlag(false);
-          contribListing.replaceContribution(contrib, contrib);  // ??
+          contribListing.replaceContribution(contrib, contrib, false);  // ??
           Iterator<Contribution> contribsListIter = contribListing.allContributions.iterator();
           boolean toBeRestarted = false;
           while (contribsListIter.hasNext()) {
@@ -682,7 +682,7 @@ class ContributionPanel extends JPanel {
     }
     installRemoveButton.setVisible(isSelected() || installRemoveButton.getText().equals(Language.text("contrib.remove")) || isUpdateInProgress);
     installRemoveButton.setEnabled(installRemoveButton.getText().equals(Language.text("contrib.remove")) ||!contribListing.hasListDownloadFailed());
-    reorganizePaneComponents();
+//    reorganizePaneComponents();
 
     descriptionPane.removeHyperlinkListener(ContributionListPanel.nullHyperlinkListener);
     descriptionPane.removeHyperlinkListener(conditionalHyperlinkOpener);
@@ -815,7 +815,7 @@ class ContributionPanel extends JPanel {
     ((CardLayout) barButtonCardPane.getLayout()).show(barButtonCardPane, PROGRESS_BAR_CONSTRAINT);
     if (contrib instanceof AvailableContribution) {
       installContribution((AvailableContribution) contrib);
-      contribListing.replaceContribution(contrib, contrib);
+      contribListing.replaceContribution(contrib, contrib, false);
     }
   }
 
@@ -850,7 +850,7 @@ class ContributionPanel extends JPanel {
           if (contrib.isDeletionFlagged()) {
             ((LocalContribution)contrib).setUpdateFlag(true);
             ((LocalContribution)contrib).setDeletionFlag(false);
-            contribListing.replaceContribution(contrib,contrib);
+            contribListing.replaceContribution(contrib,contrib, false);
           }
 
           boolean isModeActive = false;
